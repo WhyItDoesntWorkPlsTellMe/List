@@ -1,0 +1,355 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <time.h>
+
+
+const int data_number = 10;
+const int how_many_search_we_need=10; // W SUMIE TO POWINNO SIE NAZYWAC How_many_serch_and_deleting_we_need bo uzwam tego tez w multiple delete loop
+
+int* numbers_inside_increasing_list = (int*)malloc(data_number*sizeof(int)); //tylko po to żeby nie pisac dwóch funkcji ani switch casów do funkcji szukającej
+int* numbers_inside_random_list = (int*)malloc(data_number*sizeof(int));
+
+
+char plik_wyniki[10000000];
+FILE* nasz_plik_z_wynikami = fopen("plik_wyniki.txt", "w");
+
+struct our_list
+{
+    int data;
+    our_list * prev;
+    our_list * next;
+
+};
+our_list * head=NULL;
+our_list * tail=NULL;
+
+void list_insert (int number)
+{
+    our_list *new_data = (our_list*)malloc(sizeof(our_list));
+
+    if(new_data==NULL)
+    {
+        printf("Malloc allocation error!\n");
+    }
+    else
+    {
+        if(head!=NULL)
+        {
+            new_data->data=number;
+            new_data->next=head;
+            head->prev=new_data;
+            head=new_data;
+            new_data->prev=NULL;
+        }
+        else
+        {
+            head=new_data;
+            new_data->data=number;
+            head->next=NULL;
+            head->prev=NULL;
+            tail=new_data;
+            tail->prev=NULL;
+            tail->next=NULL;
+        }
+    }
+}
+
+void create_increasing_list()
+{
+    for (int iterator_number=1 ; iterator_number <= data_number ; iterator_number++ )
+    {
+        list_insert(iterator_number);
+        numbers_inside_increasing_list[iterator_number]=iterator_number;
+    }
+    numbers_inside_increasing_list[0]=NULL;
+}
+
+void create_random_list()
+{
+    for (int iterator_number=1 ; iterator_number <= data_number ; iterator_number++ )
+    {
+        int random=rand()%100000000;
+        list_insert(random);
+        numbers_inside_random_list[iterator_number]=random;
+    }
+    numbers_inside_random_list[0]=NULL;
+}
+our_list* list_search_element (int number)
+{
+    our_list* searching_element = head;
+    while (searching_element!=NULL)
+    {
+        if (searching_element->data==number)
+        {
+            printf("Znalazlem %d\n",number);
+            return searching_element;
+        }
+        searching_element=searching_element->next;
+    }
+
+    printf("Number not found on the list\n");
+    return NULL;
+}
+
+void multiple_search_loop (int * array_we_search_in) ////ERRORY
+{
+    double time_start = clock();
+    for (int search_number=0; search_number<data_number; search_number++)
+    {
+        int random=rand()%data_number+1;
+        list_search_element(array_we_search_in[random]);
+    }
+    double time = (((double)clock()-time_start)/(double)CLOCKS_PER_SEC);
+    fprintf(nasz_plik_z_wynikami,"Szukanie na liscie %f sec\n",time);
+
+}
+
+void show_list_from_tail() //NIE POTRZEBUJEMY, ALE POMAGALO TESTOWAC
+{
+    our_list* on_screen=tail;
+
+    while (on_screen!=NULL)
+    {
+        printf("%d ",on_screen->data);
+        on_screen=on_screen->prev;
+    }
+
+}
+void show_list_from_head() //TA SAMA HISTORIA
+{
+    our_list* on_screen=head;
+
+    if(head==NULL)
+    {
+        printf("List is empty!\n");
+    }
+
+    while (on_screen!=NULL)
+    {
+        printf("%d ",on_screen->data);
+        on_screen=on_screen->next;
+    }
+}
+
+int is_head (our_list* element_to_check)
+{
+    if (element_to_check==head)
+    {
+        return 1;
+    }
+
+    else
+    {
+        return 0;
+    }
+}
+
+int is_tail (our_list* element_to_check)
+{
+    if(element_to_check==tail)
+    {
+        return 1;
+    }
+
+    else
+    {
+        return 0;
+    }
+}
+
+void list_element_delete (int number)
+{
+    our_list* deleting_element = list_search_element(number);
+    if (deleting_element!=NULL)
+    {
+        printf("Element to nie NULL\n");
+        printf("head to %d \n",head->data);
+
+
+        if (1==is_head(deleting_element)&&0==is_tail(deleting_element))
+        {
+            printf("To glowa i nie ogon\n");
+            head=deleting_element->next;
+            head->prev=NULL;
+            //head->next=deleting_element->next->next;
+            //head->next->prev=head;
+            free(deleting_element);
+        }
+        else if (1==is_tail(deleting_element)&&0==is_head(deleting_element))
+        {
+            printf("To nie glowa a ogon\n");
+            tail=deleting_element->prev;
+            tail->next=NULL;
+            tail->prev=deleting_element->prev->prev;
+            tail->prev->next=tail;
+            free(deleting_element);
+        }
+
+        else if (1==is_head(deleting_element)&&1==is_tail(deleting_element))
+        {
+            printf("To glowa i ogon\n");
+            head=NULL;
+            tail=NULL;
+            free(deleting_element);
+        }
+        else
+        {
+            printf("Nie glowa i nie ogon\n");
+            deleting_element->prev->next=deleting_element->next;
+            deleting_element->next->prev=deleting_element->prev;
+            free(deleting_element);
+        }
+    }
+    else
+    {
+        printf("List was already empty\n");
+        return;
+    }
+}
+
+int choosing_random (int *array_from_which_we_delete)
+{
+    int random = rand()%data_number+1;
+            //printf("Wylosowalem %d\n",random);
+            while (array_from_which_we_delete[random]==NULL)
+            {
+                random = rand()%data_number+1;
+                //printf("Poprawilem %d\n",random);
+            }
+         printf("Wylosowalem %d\n",random);
+         printf("Wartosc tego elementu tablicy to %d\n",array_from_which_we_delete[random]);
+        return random;
+}
+
+void shift_array_to_avoid_repeat (int number, int * array_we_shift)
+{
+    array_we_shift[number]= NULL;
+
+}
+
+
+void multiple_delete_loop(int * array_from_which_we_delete) //ERRORY
+{
+    double * time_at_all;
+
+    for (int search_number=0; search_number<data_number; search_number++)
+    {
+        int random= choosing_random(array_from_which_we_delete);
+
+        double time_start = clock();
+        list_element_delete(array_from_which_we_delete[random]);
+
+        double time = (((double)clock()-time_start)/(double)CLOCKS_PER_SEC);
+        shift_array_to_avoid_repeat(random,array_from_which_we_delete);
+
+        *time_at_all = *time_at_all + time;
+        show_list_from_head();
+        printf("\n");
+    }
+
+    fprintf(nasz_plik_z_wynikami,"Usuwanie na liscie %f sec\n",*time_at_all);
+}
+
+void clean_up_list()//OK???
+{
+
+    if (tail!=NULL && head!=NULL)
+    {our_list* current_deleting=tail;
+
+    while( head!=NULL && tail!=NULL )
+    {
+
+        tail=current_deleting->prev;
+        tail->next=NULL;
+        if(tail->prev=NULL)
+        {
+            free(tail);
+            return;
+        }
+        tail->prev=current_deleting->prev->prev;
+        tail->prev->next=tail;
+        free(current_deleting);
+    }
+    }
+
+else return;
+}
+
+int main()
+{
+
+    srand(time(NULL));
+
+    create_increasing_list();
+    show_list_from_head();
+    printf("\n");
+    show_list_from_tail();
+    printf("\n");
+
+    printf("\nSzukanie...\n");
+    multiple_search_loop(numbers_inside_increasing_list);
+    printf("\nUsuwanie...\n");
+    multiple_delete_loop(numbers_inside_increasing_list);
+
+    for (int i=0; i<data_number; i++)
+    {
+        printf ("%d ",numbers_inside_increasing_list[i]);
+    }
+
+   //free(numbers_inside_increasing_list); //OK?????
+
+
+
+    /*clean_up_list();
+    printf("\nRandomowa lista:\n");
+
+    create_random_list();
+    show_list_from_head();
+    printf("\n");
+    show_list_from_tail();
+    printf("\nSzukanie...\n");
+    multiple_search_loop(numbers_inside_random_list);
+    printf("\nUsuwanie:\n");
+    multiple_delete_loop(numbers_inside_random_list);
+    show_list_from_head();
+    printf("\n");
+    show_list_from_tail();
+    free(numbers_inside_random_list);
+
+    clean_up_list();
+    */
+    fclose(nasz_plik_z_wynikami);
+
+
+    /*create_increasing_list();
+    show_list_from_head();
+    printf("\n");
+    show_list_from_tail();
+    printf("\n");
+
+    for(int i=0;i<data_number;i++)
+    {
+
+       list_search_element(i);
+
+    }
+
+    printf("Rozpoczynam usuwanie\n");
+
+    for(int i=data_number-1;i>=0;i--)
+    {
+
+       list_element_delete(i);
+       printf("Usunalem\n");
+       show_list_from_head();
+       printf("\n");
+       show_list_from_tail();
+       printf("\n");
+
+    }
+    */
+    return 0;
+
+}
+
